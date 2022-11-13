@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/matheusF23/go-rabbitmq-grafana/internal/order/infra/database"
 	"github.com/matheusF23/go-rabbitmq-grafana/internal/order/usecase"
@@ -39,5 +40,6 @@ func main() {
 		}
 		msg.Ack(false)
 		fmt.Println(outputDTO)
+		time.Sleep(500 * time.Millisecond)
 	}
 }
