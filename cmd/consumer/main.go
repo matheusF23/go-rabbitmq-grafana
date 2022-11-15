@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/matheusF23/go-rabbitmq-grafana/internal/order/infra/database"
@@ -27,13 +28,21 @@ func main() {
 	}
 	defer ch.Close()
 	out := make(chan amqp.Delivery)
-	forever := make(chan bool)
 	go rabbitmq.Consume(ch, out) // Thread 2
-	qtdWorks := 5
+	qtdWorks := 100
 	for i := 1; i <= qtdWorks; i++ {
 		go worker(out, &uc, i)
 	}
-	<-forever
+	http.HandleFunc("/total", func(w http.ResponseWriter, r *http.Request) {
+		getTotalUC := usecase.GetTotalUseCase{OrderRepository: repository}
+		total, err := getTotalUC.Execute()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+		}
+		json.NewEncoder(w).Encode(total)
+	})
+	http.ListenAndServe(":8080", nil)
 }
 
 func worker(deliveryMessage <-chan amqp.Delivery, uc *usecase.CalculateFinalPriceUseCase, workerID int) {
